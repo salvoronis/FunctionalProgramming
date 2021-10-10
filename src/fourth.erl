@@ -61,6 +61,28 @@ seq_gen_palindrome() ->
     0,
     lists:seq(100, 999)).
 
+%% using map function
+map_palindrome() ->
+  lists:mapfoldl(
+    fun(X, Acc) ->
+      MaxY = lists:foldl(
+        fun(Y, AccY) ->
+          Reversed = erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))),
+          if
+            X * Y == Reversed, X * Y > AccY ->
+              X * Y;
+            true ->
+              AccY
+          end
+        end,
+        0,
+        lists:seq(100, 999)),
+      {MaxY, if MaxY > Acc -> MaxY; true -> Acc end}
+    end,
+    0,
+    lists:seq(100, 999)
+  ).
+
 
 start() ->
   io:format(
@@ -71,4 +93,7 @@ start() ->
     [palindrome_rec(999, 999)]),
   io:format(
     "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
-    [seq_gen_palindrome()]).
+    [seq_gen_palindrome()]),
+  io:format(
+    "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
+    [element(2,map_palindrome())]).
