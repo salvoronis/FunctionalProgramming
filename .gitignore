@@ -2,3 +2,5 @@
 functional_programming.iml
 *.beam
 *.cookie
+META-INF
+*.class
