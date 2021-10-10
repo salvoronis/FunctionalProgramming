@@ -19,6 +19,7 @@ palindrome_tailrec(X, Y, Max) ->
   end.
 
 %% usual recurse
+
 palindrome_rec(100, 100) ->
   10000;
 palindrome_rec(X, 100) ->
@@ -33,6 +34,33 @@ palindrome_rec(X, Y) ->
       PrevVal
   end.
 
+%% using seq generations
+
+seq_gen_palindrome() ->
+  lists:foldl(
+    fun(X, Acc) ->
+      MaxY = lists:foldl(
+        fun(Y, AccY) ->
+          Reversed = erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))),
+          if
+            X * Y == Reversed, X * Y > AccY ->
+              X * Y;
+            true ->
+              AccY
+          end
+        end,
+        0,
+        lists:seq(100, 999)),
+      if
+        MaxY > Acc ->
+          MaxY;
+        true ->
+          Acc
+      end
+    end,
+    0,
+    lists:seq(100, 999)).
+
 
 start() ->
   io:format(
@@ -40,4 +68,7 @@ start() ->
     [palindrome_tailrec(100, 100, 0)]),
   io:format(
     "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
-    [palindrome_rec(999, 999)]).
+    [palindrome_rec(999, 999)]),
+  io:format(
+    "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
+    [seq_gen_palindrome()]).
