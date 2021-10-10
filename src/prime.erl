@@ -55,6 +55,30 @@ primes(N, A, B, Primes) ->
   end.
 
 %% seq generated solution
+seq_gen_sol() ->
+  lists:foldl(
+    fun(A, Acc) ->
+      MaxB = lists:foldl(
+        fun(B, AccB) ->
+          This = get_primes(A, B),
+          if
+            element(3, AccB) > element(3, This) -> AccB;
+            true -> This
+          end
+        end,
+        {0, 0, -1},
+        lists:seq(-999, 999)
+      ),
+      if
+        element(3, MaxB) > element(3, Acc)-> MaxB;
+        true -> Acc
+      end
+    end,
+    {0, 0, -1},
+    lists:seq(-999, 999)
+  ).
+
+%% map solution
 
 len(L) ->
   len(L, 0).
@@ -79,4 +103,7 @@ start() ->
     [start_tailrec_sol()]),
   io:format(
     "-> ~p~n",
-    [start_recurry_sol()]).
+    [start_recurry_sol()]),
+  io:format(
+    "-> ~p~n",
+    [seq_gen_sol()]).
