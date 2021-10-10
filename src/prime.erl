@@ -2,8 +2,9 @@
 -author("salvoroni").
 
 %% API
--export([start/0]).
+-export([start/0, get_primes/2]).
 
+%% tail recursion
 start_tailrec_sol() ->
   tailrec_sol(0, -999, -999, [], 0, 0, 0).
 tailrec_sol(_, 1000, 1000, _, MaxA, MaxB, MaxP) ->
@@ -23,6 +24,37 @@ tailrec_sol(N, A, B, Primes, MaxA, MaxB, MaxP) ->
       end
   end.
 
+%% usual recursion
+start_recurry_sol() ->
+  recurry_sol(-999, -999).
+recurry_sol(999, _) ->
+  {0, 0, -1};
+recurry_sol(A, 999) ->
+  recurry_sol(A + 1, -999);
+recurry_sol(A, B) ->
+  This = get_primes(A, B),
+  NextVal = recurry_sol(A, B + 1),
+  Max = if
+    element(3,NextVal) < element(3, This) -> This;
+    true -> NextVal
+  end,
+  Max.
+
+get_primes(A, B) ->
+  primes(0, A, B, []).
+primes(_, A, 999, _) ->
+  primes(0, A + 1, -999, []);
+primes(N, A, B, Primes) ->
+  IsPrime = isPrime(N*N + A*N + B),
+  if
+    IsPrime == true ->
+      primes(N + 1, A, B, [N*N+A*N+B|Primes]);
+    IsPrime == false ->
+      Length = len(Primes),
+      {A, B, Length}
+  end.
+
+%% seq generated solution
 
 len(L) ->
   len(L, 0).
@@ -44,4 +76,7 @@ isPrime(N,M)->
 start() ->
   io:format(
     "-> ~p~n",
-    [start_tailrec_sol()]).
+    [start_tailrec_sol()]),
+  io:format(
+    "-> ~p~n",
+    [start_recurry_sol()]).
