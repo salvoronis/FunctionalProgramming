@@ -86,14 +86,14 @@ map_palindrome() ->
 
 start() ->
   io:format(
-    "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
+    "Max palindrome by multiplying two 3 digital numbers using tail recurcy = ~p~n",
     [palindrome_tailrec(100, 100, 0)]),
   io:format(
-    "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
+    "Max palindrome by multiplying two 3 digital numbers using usual recurcy = ~p~n",
     [palindrome_rec(999, 999)]),
   io:format(
-    "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
+    "Max palindrome by multiplying two 3 digital numbers using seq generation = ~p~n",
     [seq_gen_palindrome()]),
   io:format(
-    "Максимальный палиндром, полученный перемножением 2-х 3-х значных чисел = ~p~n",
+    "Max palindrome by multiplying two 3 digital numbers using map = ~p~n",
     [element(2,map_palindrome())]).

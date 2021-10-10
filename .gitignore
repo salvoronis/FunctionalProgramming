@@ -4,3 +4,5 @@ functional_programming.iml
 *.cookie
 META-INF
 *.class
+lib
+out
