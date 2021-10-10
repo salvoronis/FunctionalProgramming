@@ -79,6 +79,28 @@ seq_gen_sol() ->
   ).
 
 %% map solution
+map_solution() ->
+  lists:mapfoldl(
+    fun(A, Acc) ->
+      MaxB = lists:foldl(
+        fun(B, AccB) ->
+          This = get_primes(A, B),
+          if
+            element(3, AccB) > element(3, This) -> AccB;
+            true -> This
+          end
+        end,
+        {0, 0, -1},
+        lists:seq(-999, 999)
+      ),
+      if
+        element(3, MaxB) > element(3, Acc)-> {A, MaxB};
+        true -> {A, Acc}
+      end
+    end,
+    {0, 0, -1},
+    lists:seq(-999, 999)
+  ).
 
 len(L) ->
   len(L, 0).
@@ -99,11 +121,14 @@ isPrime(N,M)->
 
 start() ->
   io:format(
-    "-> ~p~n",
+    "tailrec-> ~p~n",
     [start_tailrec_sol()]),
   io:format(
-    "-> ~p~n",
+    "rec-> ~p~n",
     [start_recurry_sol()]),
   io:format(
-    "-> ~p~n",
-    [seq_gen_sol()]).
+    "seq gen-> ~p~n",
+    [seq_gen_sol()]),
+  io:format(
+    "map-> ~p~n",
+    [element(2,map_solution())]).
