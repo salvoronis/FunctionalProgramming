@@ -3,6 +3,7 @@
 
 %% API
 -export([start/0, get_primes/2]).
+-import(utils, [create_endless_list/1, endless_list/1]).
 
 %% tail recursion
 start_tailrec_sol() ->
@@ -22,6 +23,38 @@ tailrec_sol(N, A, B, Primes, MaxA, MaxB, MaxP) ->
         Length > MaxP -> tailrec_sol(0, A, B + 1, [], A, B, Length);
         true -> tailrec_sol(0, A, B + 1, [], MaxA, MaxB, MaxP)
       end
+  end.
+
+%% endless list solution
+start_endless_solution() ->
+  IterA = create_endless_list(fun(X) -> X + 1 end),
+  IterB = create_endless_list(fun(X) -> X + 1 end),
+  endless_solution(0, -999, -999, [], 0, 0, 0, IterA, IterB).
+endless_solution(_, 999, _, Primes, MaxA, MaxB, MaxP, IterA, IterB) ->
+  IterA ! finished,
+  IterB ! finished,
+  {MaxA, MaxB, MaxP};
+endless_solution(_, A, 999, Primes, MaxA, MaxB, MaxP, IterA, IterB) ->
+  IterB ! finished,
+  NextIterB = create_endless_list(fun(X) -> X + 1 end),
+  IterA ! {A, self()},
+  receive
+    NextA ->
+      endless_solution(0, NextA, -999, Primes, MaxA, MaxB, MaxP, IterA, NextIterB)
+  end;
+endless_solution(N, A, B, Primes, MaxA, MaxB, MaxP, IterA, IterB) ->
+  case isPrime(N*N + A * N + B) of
+  true ->
+    endless_solution(N + 1, A, B, [N*N+A*N+B|Primes], MaxA, MaxB, MaxP, IterA, IterB);
+  false ->
+    IterB ! {B, self()},
+    receive
+      NextB ->
+        case len(Primes) of
+          Len when Len > MaxP -> endless_solution(0, A, NextB, [], A, B, Len, IterA, IterB);
+          _ -> endless_solution(0, A, NextB, [], MaxA, MaxB, MaxP, IterA, IterB)
+        end
+    end
   end.
 
 %% usual recursion
@@ -119,6 +152,17 @@ isPrime(N,M)->
     true -> isPrime(N,M+1)
   end.
 
+%%create_endless_list(Rule) ->
+%%  spawn(prime, endless_list, [Rule]).
+%%
+%%endless_list(Rule) ->
+%%  receive
+%%    {CurrentX, Pid} ->
+%%      Pid ! Rule(CurrentX),
+%%      endless_list(Rule);
+%%    finished -> ok
+%%  end.
+
 start() ->
   io:format(
     "tailrec-> ~p~n",
@@ -131,4 +175,7 @@ start() ->
     [seq_gen_sol()]),
   io:format(
     "map-> ~p~n",
-    [element(2,map_solution())]).
+    [element(2,map_solution())]),
+  io:format(
+    "endless-> ~p~n",
+    [start_endless_solution()]).
