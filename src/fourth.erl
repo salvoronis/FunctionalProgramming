@@ -11,11 +11,10 @@ palindrome_tailrec(999, 999, Max) ->
 palindrome_tailrec(X, 999, Max) ->
   palindrome_tailrec(X + 1, 100, Max);
 palindrome_tailrec(X, Y, Max) ->
-  Reversed = erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))),
-  if
-    X * Y == Reversed, X * Y > Max ->
+  case erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))) of
+    Reversed when X * Y == Reversed, X * Y > Max ->
       palindrome_tailrec(X, Y + 1, X * Y);
-    true ->
+    _ ->
       palindrome_tailrec(X, Y + 1, Max)
   end.
 
@@ -55,13 +54,10 @@ palindrome_rec(100, 100) ->
 palindrome_rec(X, 100) ->
   palindrome_rec(X-1, 999);
 palindrome_rec(X, Y) ->
-  Reversed = erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))),
-  PrevVal = palindrome_rec(X, Y-1),
-  if
-    X * Y == Reversed, X * Y > PrevVal ->
+  case {erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))),palindrome_rec(X, Y-1)} of
+    {Reversed, PrevVal} when X * Y == Reversed, X * Y > PrevVal ->
       X * Y;
-    true ->
-      PrevVal
+    {_, PrevVal} -> PrevVal
   end.
 
 %% using seq generations
@@ -71,11 +67,10 @@ seq_gen_palindrome() ->
     fun(X, Acc) ->
       MaxY = lists:foldl(
         fun(Y, AccY) ->
-          Reversed = erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))),
-          if
-            X * Y == Reversed, X * Y > AccY ->
+          case erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))) of
+            Reversed when X * Y == Reversed, X * Y > AccY ->
               X * Y;
-            true ->
+            _ ->
               AccY
           end
         end,

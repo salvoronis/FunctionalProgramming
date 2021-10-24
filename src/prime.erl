@@ -13,15 +13,13 @@ tailrec_sol(_, 1000, 1000, _, MaxA, MaxB, MaxP) ->
 tailrec_sol(_, A, 1000, _, MaxA, MaxB, MaxP) ->
   tailrec_sol(0, A+1, -999, [], MaxA, MaxB, MaxP);
 tailrec_sol(N, A, B, Primes, MaxA, MaxB, MaxP) ->
-  IsPrime = isPrime(N*N + A*N + B),
-  if
-    IsPrime == true ->
+  case isPrime(N*N + A*N + B) of
+    true ->
       tailrec_sol(N + 1, A, B, [N*N+A*N+B|Primes], MaxA, MaxB, MaxP);
-    IsPrime == false ->
-      Length = len(Primes),
-      if
-        Length > MaxP -> tailrec_sol(0, A, B + 1, [], A, B, Length);
-        true -> tailrec_sol(0, A, B + 1, [], MaxA, MaxB, MaxP)
+    false ->
+      case len(Primes) of
+        Length when Length > MaxP -> tailrec_sol(0, A, B + 1, [], A, B, Length);
+        _ -> tailrec_sol(0, A, B + 1, [], MaxA, MaxB, MaxP)
       end
   end.
 
@@ -30,7 +28,7 @@ start_endless_solution() ->
   IterA = create_endless_list(fun(X) -> X + 1 end),
   IterB = create_endless_list(fun(X) -> X + 1 end),
   endless_solution(0, -999, -999, [], 0, 0, 0, IterA, IterB).
-endless_solution(_, 999, _, Primes, MaxA, MaxB, MaxP, IterA, IterB) ->
+endless_solution(_, 999, _, _, MaxA, MaxB, MaxP, IterA, IterB) ->
   IterA ! finished,
   IterB ! finished,
   {MaxA, MaxB, MaxP};
@@ -78,11 +76,10 @@ get_primes(A, B) ->
 primes(_, A, 999, _) ->
   primes(0, A + 1, -999, []);
 primes(N, A, B, Primes) ->
-  IsPrime = isPrime(N*N + A*N + B),
-  if
-    IsPrime == true ->
+  case isPrime(N*N + A*N + B) of
+    true ->
       primes(N + 1, A, B, [N*N+A*N+B|Primes]);
-    IsPrime == false ->
+    false ->
       Length = len(Primes),
       {A, B, Length}
   end.
