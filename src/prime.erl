@@ -152,17 +152,6 @@ isPrime(N,M)->
     true -> isPrime(N,M+1)
   end.
 
-%%create_endless_list(Rule) ->
-%%  spawn(prime, endless_list, [Rule]).
-%%
-%%endless_list(Rule) ->
-%%  receive
-%%    {CurrentX, Pid} ->
-%%      Pid ! Rule(CurrentX),
-%%      endless_list(Rule);
-%%    finished -> ok
-%%  end.
-
 start() ->
   io:format(
     "tailrec-> ~p~n",

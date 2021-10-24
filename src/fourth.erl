@@ -2,6 +2,7 @@
 -author("salvoroni").
 
 -export([start/0]).
+-import(utils, [create_endless_list/1, endless_list/1]).
 
 %% tailrec
 
@@ -16,6 +17,35 @@ palindrome_tailrec(X, Y, Max) ->
       palindrome_tailrec(X, Y + 1, X * Y);
     true ->
       palindrome_tailrec(X, Y + 1, Max)
+  end.
+
+%% endless list solution
+
+start_palindrome_endless() ->
+  IterX = create_endless_list(fun(X) -> X + 1 end),
+  IterY = create_endless_list(fun(X) -> X + 1 end),
+  palindrome_endless(100, 100, 0, IterX, IterY).
+palindrome_endless(999, 999, Max, IterX, IterY) ->
+  IterY ! finished,
+  IterX ! finished,
+  Max;
+palindrome_endless(X, 999, Max, IterX, IterY) ->
+  IterY ! finished,
+  NewIterY = create_endless_list(fun(X) -> X + 1 end),
+  IterX ! {X, self()},
+  receive
+    NewX -> palindrome_endless(NewX, 100, Max, IterX, NewIterY)
+  end;
+palindrome_endless(X, Y, Max, IterX, IterY) ->
+  IterY ! {Y, self()},
+  receive
+    NextY ->
+      case erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))) of
+        Reversed when X * Y == Reversed, X * Y > Max ->
+          palindrome_endless(X, NextY, X * Y, IterX, IterY);
+        _ ->
+          palindrome_endless(X, NextY, Max, IterX, IterY)
+      end
   end.
 
 %% usual recurse
@@ -96,4 +126,7 @@ start() ->
     [seq_gen_palindrome()]),
   io:format(
     "Max palindrome by multiplying two 3 digital numbers using map = ~p~n",
-    [element(2,map_palindrome())]).
+    [element(2,map_palindrome())]),
+  io:format(
+    "Max palindrome by multiplying two 3 digital numbers using endless list = ~p~n",
+    [start_palindrome_endless()]).
