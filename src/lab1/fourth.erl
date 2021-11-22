@@ -31,12 +31,12 @@ palindrome_endless(999, 999, Max, IterX, IterY) ->
 palindrome_endless(X, 999, Max, IterX, IterY) ->
   IterY ! finished,
   NewIterY = create_endless_list(fun(X) -> X + 1 end),
-  IterX ! {X, self()},
+  IterX ! self(),
   receive
     NewX -> palindrome_endless(NewX, 100, Max, IterX, NewIterY)
   end;
 palindrome_endless(X, Y, Max, IterX, IterY) ->
-  IterY ! {Y, self()},
+  IterY ! self(),
   receive
     NextY ->
       case erlang:list_to_integer(lists:reverse(integer_to_list(X * Y))) of

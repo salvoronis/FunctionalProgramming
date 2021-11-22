@@ -35,7 +35,7 @@ endless_solution(_, 999, _, _, MaxA, MaxB, MaxP, IterA, IterB) ->
 endless_solution(_, A, 999, Primes, MaxA, MaxB, MaxP, IterA, IterB) ->
   IterB ! finished,
   NextIterB = create_endless_list(fun(X) -> X + 1 end),
-  IterA ! {A, self()},
+  IterA ! self(),
   receive
     NextA ->
       endless_solution(0, NextA, -999, Primes, MaxA, MaxB, MaxP, IterA, NextIterB)
@@ -45,7 +45,7 @@ endless_solution(N, A, B, Primes, MaxA, MaxB, MaxP, IterA, IterB) ->
   true ->
     endless_solution(N + 1, A, B, [N*N+A*N+B|Primes], MaxA, MaxB, MaxP, IterA, IterB);
   false ->
-    IterB ! {B, self()},
+    IterB ! self(),
     receive
       NextB ->
         case len(Primes) of
