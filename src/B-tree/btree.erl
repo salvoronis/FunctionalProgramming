@@ -15,6 +15,7 @@
 -record(node, {left = undefined, right = undefined, height = 1, val}).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("proper/include/proper.hrl").
 
 init_btree(Val) -> #node{left = undefined, right = undefined, val = Val, height = 1}.
 
@@ -108,7 +109,7 @@ remove_min(Node) when is_record(Node, node), Node#node.left == undefined ->
 remove_min(Node) when is_record(Node, node) ->
   balance(Node#node{left = remove_min(Node#node.left)}).
 
-remove(Node, Key) when Node == undefined ->
+remove(Node, _) when Node == undefined ->
   Node;
 remove(Node, Key) ->
   New = case Node of
@@ -157,7 +158,7 @@ foldr(Fun, Acc, Node) ->
       foldr(Fun, NewAcc, Node#node.left)
   end.
 
-map(Fun, Node) ->
+btree_map(Fun, Node) ->
   map(Fun, Node, ok).
 map(_, Node, NewNode) when Node == undefined ->NewNode;
 map(Fun, Node, NewNode)->
@@ -184,19 +185,27 @@ addTree(MainTree, SlaveTree) ->
   addTree(SuperPuperNewMainTree, SlaveTree#node.right).
 
 subTree(undefined, undefined) -> undefined;
-subTree(undefined, Tree) -> Tree;
+subTree(undefined, _) -> undefined;
 subTree(Tree, undefined) -> Tree;
 subTree(MainTree, SlaveTree) ->
   SuperNewMainTree = subTree(MainTree, SlaveTree#node.left),
   SuperPuperNewMainTree = remove(SuperNewMainTree, SlaveTree#node.val),
   subTree(SuperPuperNewMainTree, SlaveTree#node.right).
 
-equals(undefined, undefined) -> true;
-equals(undefined, _) -> false;
-equals(_, undefined) -> false;
-equals(FirstTree, SecondTree) when FirstTree#node.val /= SecondTree#node.val -> false;
-equals(FirstTree, SecondTree) when FirstTree#node.val == SecondTree#node.val ->
-  true and equals(FirstTree#node.left, SecondTree#node.left) and equals(FirstTree#node.right, SecondTree#node.right).
+btree_equals(undefined, undefined) -> true;
+btree_equals(undefined, _) -> false;
+btree_equals(_, undefined) -> false;
+btree_equals(FirstTree, SecondTree) when FirstTree#node.val /= SecondTree#node.val -> false;
+btree_equals(FirstTree, SecondTree) when FirstTree#node.val == SecondTree#node.val ->
+  true and btree_equals(FirstTree#node.left, SecondTree#node.left) and btree_equals(FirstTree#node.right, SecondTree#node.right).
+
+from_list(List) ->
+  from_list(List, #node{}).
+from_list([], Tree) ->
+  Tree;
+from_list([Item|Tail], Tree) ->
+  add(Tree, Item),
+  from_list(Tail, Tree).
 
 
 start() ->
@@ -205,10 +214,10 @@ start() ->
   Tree2 = add(Tree1, 3),
   Tree3 = add(Tree2, 4),
   Tree4 = add(Tree3, 5),
-  io:format("~w~n", [map(fun(X) -> X*2 end, add(init_btree(1),2))]),
+  io:format("~w~n", [btree_map(fun(X) -> X*2 end, add(init_btree(1),2))]),
   print_btree(Tree4),
   print_btree(filter(fun(X) -> case X of 3 -> false; _ -> true end end, Tree4)),
-  io:format("equals = ~w~n", [equals(Tree4, Tree4)]).
+  io:format("equals = ~w~n", [btree_equals(Tree4, Tree4)]).
 
 -ifdef(EUNIT).
 init_test_() -> [
@@ -271,7 +280,7 @@ foldr_test_() -> [
   ?_assert(foldr(fun(X, Res) -> X - Res*2 end, 0, add(init_btree(1),2)) =:= -3)
 ].
 map_test_() -> [
-  ?_assert(map(fun(X) -> X*2 end, add(init_btree(1),2)) =:= #node{val = 2, height = 2, right = #node{val = 4}})
+  ?_assert(btree_map(fun(X) -> X*2 end, add(init_btree(1),2)) =:= #node{val = 2, height = 2, right = #node{val = 4}})
 ].
 filter_test_() -> [
   ?_assert(filter(fun(X) -> case X of 2 -> false; _ -> true end end, add(init_btree(1),2)) =:= #node{val = 1})
@@ -289,7 +298,51 @@ equals_test_() ->
   Tree3 = add(Tree2, 4),
   Tree4 = add(Tree3, 5),
   [
-    ?_assert(equals(Tree4, Tree4) =:= true),
-    ?_assert(equals(Tree4, Tree3) =:= false)
+    ?_assert(btree_equals(Tree4, Tree4) =:= true),
+    ?_assert(btree_equals(Tree4, Tree3) =:= false)
   ].
+
+%%Prop tests
+prop_add_commutativity() ->
+  ?FORALL(
+    {L1, L2},
+    {list(integer()), list(integer())},
+    begin
+      Tree1 = from_list(L1),
+      Tree2 = from_list(L2),
+      btree_equals(addTree(Tree1, Tree2), addTree(Tree2, Tree1))
+    end
+  ).
+
+prop_sub_not_commutativity() ->
+  ?FORALL(
+    {L1, L2},
+    {list(integer()), list(integer())},
+    begin
+      Tree1 = from_list(L1),
+      Tree2 = from_list(L2),
+      case btree_equals(Tree1, Tree2) of
+        true -> true;
+        _ -> btree_equals(subTree(Tree1, Tree2), subTree(Tree2, Tree1)) == false
+      end
+    end
+  ).
+
+prop_add_zero_elem_commutativ() ->
+  ?FORALL(
+    {L1, L2},
+    {list(), list(integer())},
+    begin
+      ZeroTree = from_list(L1),
+      Tree = from_list(L2),
+      equals(addTree(ZeroTree, Tree), addTree(Tree, ZeroTree))
+    end
+  ).
+
+addition_commutative_test() ->
+  ?assert(proper:quickcheck(prop_add_commutativity(), [{to_file, user}, {numtests, 1488}]) == true).
+sub_not_commutative_test() ->
+  ?assert(proper:quickcheck(prop_sub_not_commutativity(), [{to_file, user},{numtests, 666}]) == true).
+addition_zero_elem_commutative_test() ->
+  ?assert(proper:quickcheck(prop_add_zero_elem_commutativ(), [{to_file, user},{numtests, 777}]) == true).
 -endif.
