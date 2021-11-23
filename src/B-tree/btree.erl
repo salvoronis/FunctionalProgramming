@@ -12,7 +12,9 @@
 %% API
 -export([start/0]).
 
--record(node, {left, right = undefined, height = 1, val}).
+-record(node, {left = undefined, right = undefined, height = 1, val}).
+
+-include_lib("eunit/include/eunit.hrl").
 
 init_btree(Val) -> #node{left = undefined, right = undefined, val = Val, height = 1}.
 
@@ -189,10 +191,105 @@ subTree(MainTree, SlaveTree) ->
   SuperPuperNewMainTree = remove(SuperNewMainTree, SlaveTree#node.val),
   subTree(SuperPuperNewMainTree, SlaveTree#node.right).
 
+equals(undefined, undefined) -> true;
+equals(undefined, _) -> false;
+equals(_, undefined) -> false;
+equals(FirstTree, SecondTree) when FirstTree#node.val /= SecondTree#node.val -> false;
+equals(FirstTree, SecondTree) when FirstTree#node.val == SecondTree#node.val ->
+  true and equals(FirstTree#node.left, SecondTree#node.left) and equals(FirstTree#node.right, SecondTree#node.right).
+
+
 start() ->
   Tree0 = init_btree(6),
   Tree1 = add(Tree0, 2),
   Tree2 = add(Tree1, 3),
   Tree3 = add(Tree2, 4),
   Tree4 = add(Tree3, 5),
-  print_btree(filter(fun(X) -> case X of 3 -> false; _ -> true end end, Tree4)).
+  io:format("~w~n", [map(fun(X) -> X*2 end, add(init_btree(1),2))]),
+  print_btree(Tree4),
+  print_btree(filter(fun(X) -> case X of 3 -> false; _ -> true end end, Tree4)),
+  io:format("equals = ~w~n", [equals(Tree4, Tree4)]).
+
+-ifdef(EUNIT).
+init_test_() -> [
+  ?_assert(init_btree(1) =:= #node{left = undefined, right = undefined, val = 1, height = 1})
+].
+add_test_() -> [
+  ?_assert(add(not_a_node, 1) =:= #node{left = undefined, right = undefined, val = 1, height = 1}),
+  ?_assert(add(add(not_a_node, 1),2) =:= #node{left = undefined, val = 1, height = 2, right = #node{left = undefined, right = undefined, val = 2, height = 1}})
+].
+height_test_() -> [
+  ?_assert(height(add(not_a_node, 1)) =:= 1),
+  ?_assert(height(undefined) =:= 0)
+].
+balance_factor_test_() -> [
+  ?_assert(balance_factor(init_btree(1)) =:= 0),
+  ?_assert(balance_factor(add(init_btree(1),2)) =:= 1)
+].
+fix_height_test_() -> [
+  ?_assert(fix_height(add(init_btree(1),2)) =:= 2),
+  ?_assert(fix_height(init_btree(1)) =:= 1)
+].
+balance_test_() -> [
+  ?_assert(add(add(add(add(init_btree(6),2),3),4),5) =:= #node{
+    val = 3,
+    height = 3,
+    left = #node{
+      left = undefined,
+      right = undefined,
+      val = 2,
+      height = 1
+    },
+    right = #node{
+      val = 5,
+      height = 2,
+      left = #node{
+        val = 4,
+        height = 1,
+        left = undefined,
+        right = undefined
+      },
+      right = #node{
+        val = 6,
+        height = 1,
+        left = undefined,
+        right = undefined
+      }
+    }
+  })
+].
+get_test_() -> [
+  ?_assert(get(add(add(add(add(init_btree(6),2),3),4),5), 4) =:= {
+    #node{val = 4, height = 1},
+    #node{val = 5, height = 2, left = #node{val = 4, height = 1}, right = #node{val = 6, height = 1}}
+  })
+].
+foldl_test_() -> [
+  ?_assert(foldl(fun(X, Res) -> X + Res end,0,add(init_btree(1),2)) =:= 3)
+].
+foldr_test_() -> [
+  ?_assert(foldr(fun(X, Res) -> X - Res*2 end, 0, add(init_btree(1),2)) =:= -3)
+].
+map_test_() -> [
+  ?_assert(map(fun(X) -> X*2 end, add(init_btree(1),2)) =:= #node{val = 2, height = 2, right = #node{val = 4}})
+].
+filter_test_() -> [
+  ?_assert(filter(fun(X) -> case X of 2 -> false; _ -> true end end, add(init_btree(1),2)) =:= #node{val = 1})
+].
+add_tree_test_() -> [
+  ?_assert(addTree(init_btree(1), init_btree(2)) =:= #node{val = 1, height = 2, right = #node{val = 2}})
+].
+sub_tree_test_() -> [
+  ?_assert(subTree(add(init_btree(1),2), init_btree(2)) =:= #node{val = 1})
+].
+equals_test_() ->
+  Tree0 = init_btree(6),
+  Tree1 = add(Tree0, 2),
+  Tree2 = add(Tree1, 3),
+  Tree3 = add(Tree2, 4),
+  Tree4 = add(Tree3, 5),
+  [
+    ?_assert(equals(Tree4, Tree4) =:= true),
+    ?_assert(equals(Tree4, Tree3) =:= false)
+  ].
+-endif.
