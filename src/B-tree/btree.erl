@@ -24,12 +24,12 @@ add(Node, Val) when is_record(Node, node) ->
     true ->
       case Node#node.left of
         Left when is_record(Left, node) -> Node#node{left = add(Left, Val)};
-        undefined -> Node#node{left = #node{left = undefined, right = undefined, val = Val}}%%Node#node.height + 1}}
+        undefined -> Node#node{left = #node{left = undefined, right = undefined, val = Val}}
       end;
     false ->
       case Node#node.right of
         Right when is_record(Right, node) -> Node#node{right = add(Right, Val)};
-        undefined -> Node#node{right = #node{left = undefined, right = undefined, val = Val}}%%Node#node.height + 1}}
+        undefined -> Node#node{right = #node{left = undefined, right = undefined, val = Val}}
       end
   end,
   balance(ResNode);
