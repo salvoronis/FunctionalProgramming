@@ -17,7 +17,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("proper/include/proper.hrl").
 
-init_btree(Val) -> #node{left = undefined, right = undefined, val = Val, height = 1}.
+init_btree(Val) -> #node{val = Val}.
 
 add(Node, Val) when is_record(Node, node) ->
   balance(
@@ -160,14 +160,14 @@ foldr(Fun, Acc, Node) ->
   end.
 
 btree_map(Fun, Node) ->
-  map(Fun, Node, ok).
+  map(Fun, Node, undefined).
 map(_, Node, Node1) when Node == undefined -> Node1;
 map(Fun, Node, Node1)->
   Node2 = map(Fun, Node#node.left, Node1),
   Node3 = add(Node2, Fun(Node#node.val)),
   map(Fun, Node#node.right, Node3).
 
-filter(Fun, Node) -> filter(Fun, Node, ok).
+filter(Fun, Node) -> filter(Fun, Node, undefined).
 filter(_, Node, Node1) when Node == undefined -> Node1;
 filter(Fun, Node, Node1) ->
   Node2 = filter(Fun, Node#node.left, Node1),
@@ -197,7 +197,7 @@ btree_equals(undefined, undefined) -> true;
 btree_equals(undefined, _) -> false;
 btree_equals(_, undefined) -> false;
 btree_equals(FirstTree, SecondTree) when FirstTree#node.val /= SecondTree#node.val -> false;
-btree_equals(FirstTree, SecondTree) when FirstTree#node.val == SecondTree#node.val ->
+btree_equals(FirstTree, SecondTree) ->
   btree_equals(FirstTree#node.left, SecondTree#node.left) and btree_equals(FirstTree#node.right, SecondTree#node.right).
 
 from_list(List) ->
