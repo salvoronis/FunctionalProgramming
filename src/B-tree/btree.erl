@@ -20,19 +20,20 @@
 init_btree(Val) -> #node{left = undefined, right = undefined, val = Val, height = 1}.
 
 add(Node, Val) when is_record(Node, node) ->
-  ResNode = case Node#node.val >= Val of
-    true ->
-      case Node#node.left of
-        Left when is_record(Left, node) -> Node#node{left = add(Left, Val)};
-        undefined -> Node#node{left = #node{left = undefined, right = undefined, val = Val}}
-      end;
-    false ->
-      case Node#node.right of
-        Right when is_record(Right, node) -> Node#node{right = add(Right, Val)};
-        undefined -> Node#node{right = #node{left = undefined, right = undefined, val = Val}}
-      end
-  end,
-  balance(ResNode);
+  balance(
+    case Node#node.val >= Val of
+      true ->
+        case Node#node.left of
+          Left when is_record(Left, node) -> Node#node{left = add(Left, Val)};
+          undefined -> Node#node{left = #node{left = undefined, right = undefined, val = Val}}
+        end;
+      false ->
+        case Node#node.right of
+          Right when is_record(Right, node) -> Node#node{right = add(Right, Val)};
+          undefined -> Node#node{right = #node{left = undefined, right = undefined, val = Val}}
+        end
+    end
+  );
 add(_, Val) -> init_btree(Val).
 
 height(undefined) -> 0;
@@ -50,39 +51,39 @@ fix_height(Node) when is_record(Node, node) ->
 
 rotate_right(Node) when is_record(Node, node) ->
   Q = Node#node.left,
-  NodeNew = Node#node{left = Q#node.right},
-  NodeSuperNew = NodeNew#node{height = fix_height(NodeNew)},
-  QNew = Q#node{right = NodeSuperNew},
-  QSuperNew = QNew#node{height = fix_height(QNew)},
-  QSuperNew.
+  Node1 = Node#node{left = Q#node.right},
+  Node2 = Node1#node{height = fix_height(Node1)},
+  Q1 = Q#node{right = Node2},
+  Q1#node{height = fix_height(Q1)}.
+%%  QTwo.
 
 rotate_left(Node) when is_record(Node, node) ->
   P = Node#node.right,
-  NodeNew = Node#node{right = P#node.left},
-  NodeSuperNew = NodeNew#node{height = fix_height(NodeNew)},
-  PNew = P#node{left = NodeSuperNew},
-  PSuperNew = PNew#node{height = fix_height(PNew)},
-  PSuperNew.
+  Node1 = Node#node{right = P#node.left},
+  Node2 = Node1#node{height = fix_height(Node1)},
+  P1 = P#node{left = Node2},
+  P1#node{height = fix_height(P1)}.
+%%  PSuperNew.
 
 balance(undefined) -> undefined;
 balance(Node) when is_record(Node, node) ->
-  NodeNew = Node#node{height = fix_height(Node)},
-  case balance_factor(NodeNew) of
+  Node1 = Node#node{height = fix_height(Node)},
+  case balance_factor(Node1) of
     BalanceFactor when BalanceFactor == 2 ->
-      case balance_factor(NodeNew#node.right) of
+      case balance_factor(Node1#node.right) of
         BFactor when BFactor < 0 ->
-          NodeSuperNew = NodeNew#node{right = rotate_right(NodeNew#node.right)},
-          rotate_left(NodeSuperNew);
-        _ -> rotate_left(NodeNew)
+          Node2 = Node1#node{right = rotate_right(Node1#node.right)},
+          rotate_left(Node2);
+        _ -> rotate_left(Node1)
       end;
     BalanceFactor when BalanceFactor == -2 ->
-      case balance_factor(NodeNew#node.left) of
+      case balance_factor(Node1#node.left) of
         BFactor when BFactor > 0 ->
-          NodeSuperNew = NodeNew#node{left = rotate_left(NodeNew#node.left)},
-          rotate_right(NodeSuperNew);
-        _ -> rotate_right(NodeNew)
+          Node2 = Node1#node{left = rotate_left(Node1#node.left)},
+          rotate_right(Node2);
+        _ -> rotate_right(Node1)
       end;
-    _ -> NodeNew
+    _ -> Node1
   end.
 
 print_btree(Node) when is_record(Node, node) ->
@@ -112,7 +113,7 @@ remove_min(Node) when is_record(Node, node) ->
 remove(Node, _) when Node == undefined ->
   Node;
 remove(Node, Key) ->
-  New = case Node of
+  balance(case Node of
     Node when Key < Node#node.val -> Node#node{left = remove(Node#node.left, Key)};
     Node when Key > Node#node.val -> Node#node{right = remove(Node#node.right, Key)};
     Node when Node#node.val == Key ->
@@ -122,11 +123,11 @@ remove(Node, Key) ->
         undefined -> Q;
         _ ->
           Min = find_min(R),
-          NewMin = Min#node{right = remove_min(R), left = Q},
-          balance(NewMin)
+          Min1 = Min#node{right = remove_min(R), left = Q},
+          balance(Min1)
       end
-  end,
-  balance(New).
+  end).
+%%  balance(New).
 
 get(Node, Key) ->
   get(Node, Key, undefined).
@@ -145,8 +146,8 @@ foldl(Fun, Acc, Node) ->
     undefined -> Acc;
     _ ->
       Acc0 = foldl(Fun, Acc, Node#node.left),
-      NewAcc = Fun(Node#node.val, Acc0),
-      foldl(Fun, NewAcc, Node#node.right)
+      Acc1 = Fun(Node#node.val, Acc0),
+      foldl(Fun, Acc1, Node#node.right)
   end.
 
 foldr(Fun, Acc, Node) ->
@@ -154,50 +155,50 @@ foldr(Fun, Acc, Node) ->
     undefined -> Acc;
     _ ->
       Acc0 = foldr(Fun, Acc, Node#node.right),
-      NewAcc = Fun(Node#node.val, Acc0),
-      foldr(Fun, NewAcc, Node#node.left)
+      Acc1 = Fun(Node#node.val, Acc0),
+      foldr(Fun, Acc1, Node#node.left)
   end.
 
 btree_map(Fun, Node) ->
   map(Fun, Node, ok).
-map(_, Node, NewNode) when Node == undefined ->NewNode;
-map(Fun, Node, NewNode)->
-  SuperNewNode = map(Fun, Node#node.left, NewNode),
-  NewNewNode = add(SuperNewNode, Fun(Node#node.val)),
-  map(Fun, Node#node.right, NewNewNode).
+map(_, Node, Node1) when Node == undefined -> Node1;
+map(Fun, Node, Node1)->
+  Node2 = map(Fun, Node#node.left, Node1),
+  Node3 = add(Node2, Fun(Node#node.val)),
+  map(Fun, Node#node.right, Node3).
 
 filter(Fun, Node) -> filter(Fun, Node, ok).
-filter(_, Node, NewNode) when Node == undefined -> NewNode;
-filter(Fun, Node, NewNode) ->
-  SuperNewNode = filter(Fun, Node#node.left, NewNode),
-  NewNewNode = case Fun(Node#node.val) of
-    true -> add(SuperNewNode, Node#node.val);
-    false -> SuperNewNode
+filter(_, Node, Node1) when Node == undefined -> Node1;
+filter(Fun, Node, Node1) ->
+  Node2 = filter(Fun, Node#node.left, Node1),
+  Node3 = case Fun(Node#node.val) of
+    true -> add(Node2, Node#node.val);
+    false -> Node2
   end,
-  filter(Fun, Node#node.right, NewNewNode).
+  filter(Fun, Node#node.right, Node3).
 
 addTree(undefined, undefined) -> undefined;
 addTree(undefined, Tree) -> Tree;
 addTree(Tree, undefined) -> Tree;
-addTree(MainTree, SlaveTree) ->
-  SuperNewMainTree = addTree(MainTree, SlaveTree#node.left),
-  SuperPuperNewMainTree = add(SuperNewMainTree, SlaveTree#node.val),
-  addTree(SuperPuperNewMainTree, SlaveTree#node.right).
+addTree(MasterTree, SlaveTree) ->
+  MasterTree1 = addTree(MasterTree, SlaveTree#node.left),
+  MasterTree2 = add(MasterTree1, SlaveTree#node.val),
+  addTree(MasterTree2, SlaveTree#node.right).
 
 subTree(undefined, undefined) -> undefined;
 subTree(undefined, _) -> undefined;
 subTree(Tree, undefined) -> Tree;
-subTree(MainTree, SlaveTree) ->
-  SuperNewMainTree = subTree(MainTree, SlaveTree#node.left),
-  SuperPuperNewMainTree = remove(SuperNewMainTree, SlaveTree#node.val),
-  subTree(SuperPuperNewMainTree, SlaveTree#node.right).
+subTree(MasterTree, SlaveTree) ->
+  MasterTree1 = subTree(MasterTree, SlaveTree#node.left),
+  MasterTree2 = remove(MasterTree1, SlaveTree#node.val),
+  subTree(MasterTree2, SlaveTree#node.right).
 
 btree_equals(undefined, undefined) -> true;
 btree_equals(undefined, _) -> false;
 btree_equals(_, undefined) -> false;
 btree_equals(FirstTree, SecondTree) when FirstTree#node.val /= SecondTree#node.val -> false;
 btree_equals(FirstTree, SecondTree) when FirstTree#node.val == SecondTree#node.val ->
-  true and btree_equals(FirstTree#node.left, SecondTree#node.left) and btree_equals(FirstTree#node.right, SecondTree#node.right).
+  btree_equals(FirstTree#node.left, SecondTree#node.left) and btree_equals(FirstTree#node.right, SecondTree#node.right).
 
 from_list(List) ->
   from_list(List, #node{}).
